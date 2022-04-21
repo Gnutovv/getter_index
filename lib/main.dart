@@ -50,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // Сортируем первые 5 (для начала) котировок
+  // Сортируем котировки. Добавляем 20 сортированных в список
   void _createSortedList() {
     if (quotesSet.length > 1) {
       sortedSet = [];
@@ -60,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
       quotesSet.forEach((key, value) {
         final Quote quote = Quote(key, value);
         for (int i = 0; i < 20; i++) {
-          if (Quote.compareAndGetLess(quote, sortedSet[i])) {
+          if (Quote.isFirstQuoteLessThenSecond(quote, sortedSet[i])) {
             sortedSet.insert(i, quote);
             sortedSet.removeLast();
             break;
@@ -121,7 +121,7 @@ class Quote {
   final double value;
   const Quote(this.name, this.value);
 
-  static bool compareAndGetLess(Quote a, Quote b) {
+  static bool isFirstQuoteLessThenSecond(Quote a, Quote b) {
     return a.value < b.value ? true : false;
   }
 }
