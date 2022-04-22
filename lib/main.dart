@@ -83,10 +83,28 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    Iterable<Text> setText() {
-      List<Text> texts = [];
+    Iterable<Widget> setText() {
+      List<Widget> texts = [];
       for (var element in sortedSet) {
-        texts.add(Text('${element.name} : ${element.value}'));
+        texts.add(Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('${element.name} : ${element.value}'),
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TicketInfoPage(
+                      ticket: element.name,
+                    ),
+                  ),
+                );
+              },
+              icon: Icon(Icons.auto_graph_outlined),
+            ),
+          ],
+        ));
       }
       for (int i = 0; i < 19; i++) {}
       return texts;
@@ -97,14 +115,16 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            if (sortedSet.length == 1)
-              Text('${sortedSet[0].name} : ${sortedSet[0].value}')
-            else
-              ...setText()
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              if (sortedSet.length == 1)
+                Text('${sortedSet[0].name} : ${sortedSet[0].value}')
+              else
+                ...setText()
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -112,6 +132,84 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Get',
         child: const Icon(Icons.download_for_offline_outlined),
       ),
+    );
+  }
+}
+
+class TicketInfoPage extends StatelessWidget {
+  final String ticket;
+  const TicketInfoPage({Key? key, required this.ticket}) : super(key: key);
+
+  Future<Widget?> getChart(String ticket) async {
+    var request = http.Request(
+        'GET',
+        Uri.parse(
+            'https://charts2-node.finviz.com/chart.ashx?cs=m&t=$ticket&tf=d&ct=candle_stick'));
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      var binaryImg = await response.stream.toBytes(); //bytesToString();
+      var img = Image.memory(binaryImg);
+      //debugPrint(img);
+      return img;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(ticket),
+      ),
+      body: FutureBuilder(
+          future: getChart(ticket),
+          builder: (BuildContext context, AsyncSnapshot snapshot) {
+            List<Widget> children;
+            if (snapshot.hasData) {
+              children = <Widget>[
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                  size: 60,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: snapshot.data,
+                )
+              ];
+            } else if (snapshot.hasError) {
+              children = <Widget>[
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 60,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text('Error: ${snapshot.error}'),
+                )
+              ];
+            } else {
+              children = const <Widget>[
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: CircularProgressIndicator(),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: Text('Awaiting result...'),
+                )
+              ];
+            }
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: children,
+              ),
+            );
+          }),
     );
   }
 }
